@@ -27,11 +27,12 @@ class User(db.Model):
 @app.route('/', methods=['GET', 'POST'])
 def login():
     message = ''
+    escaped_message= ''
     if request.method == 'POST':
         
         if 'username' in request.form and 'password' in request.form:
             # Solicitud de inicio de sesión
-            username = request.form.get('username')
+            username = request.form.get('username')[:30]
             password = request.form.get('password')
 
 
@@ -58,9 +59,10 @@ def login():
 @app.route('/nuevo_usuario', methods=['GET', 'POST'])
 def nuevo_usuario():
     message = ''
+    escaped_message= ''
     if request.method == 'POST':
         # Obtener datos del formulario
-        username = request.form.get('username')
+        username = request.form.get('username')[:30]
         password = request.form.get('password')
 
 
