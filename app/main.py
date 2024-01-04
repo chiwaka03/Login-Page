@@ -5,33 +5,36 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from utils import password_check
 from markupsafe import escape
-
+from flask.sessions import SecureCookieSessionInterface
 
 # Cargando las variables de entorno desde .env
 load_dotenv()
-
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.session_interface = SecureCookieSessionInterface()
+
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    Username = db.Column(db.String(30), unique=True, nullable=False)
+    Username = db.Column(db.String(30), unique=True, nullable=False, index=True)
     Password = db.Column(db.String(128), nullable=False)
     
     
 @app.route('/', methods=['GET', 'POST'])
 def login():
     message = ''
+    escaped_message= ''
     if request.method == 'POST':
         
         if 'username' in request.form and 'password' in request.form:
             # Solicitud de inicio de sesión
-            username = request.form.get('username')
+            username = request.form.get('username')[:30]
             password = request.form.get('password')
 
 
@@ -58,9 +61,10 @@ def login():
 @app.route('/nuevo_usuario', methods=['GET', 'POST'])
 def nuevo_usuario():
     message = ''
+    escaped_message= ''
     if request.method == 'POST':
         # Obtener datos del formulario
-        username = request.form.get('username')
+        username = request.form.get('username')[:30]
         password = request.form.get('password')
 
 
