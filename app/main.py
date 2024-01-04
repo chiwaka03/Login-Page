@@ -5,22 +5,24 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from utils import password_check
 from markupsafe import escape
-
+from flask.sessions import SecureCookieSessionInterface
 
 # Cargando las variables de entorno desde .env
 load_dotenv()
-
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.session_interface = SecureCookieSessionInterface()
+
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    Username = db.Column(db.String(30), unique=True, nullable=False)
+    Username = db.Column(db.String(30), unique=True, nullable=False, index=True)
     Password = db.Column(db.String(128), nullable=False)
     
     
