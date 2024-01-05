@@ -59,18 +59,21 @@
 <body>
     <div class="login-container">
         <h2>Iniciar Sesión</h2>
-        {% if message %}
-            <div class="{{ 'success' if 'exitoso' in message.lower() else 'error' }}">
-                {{ message }}
-            </div>
-        {% endif %}
-        <form id="loginForm" method="post">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+              {% for category, message in messages %}
+                <div class="{{ category }}">{{ message }}</div>
+              {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form id="loginForm" method="post" action="{{ url_for('login') }}">
+            {{ form.csrf_token }}
             <label for="username">Usuario:</label>
-            <input type="text" id="username" name="username" required>
-
+            {{ form.username(class="form-control", required=True) }}
+    
             <label for="password">Contraseña:</label>
-            <input type="password" id="password" name="password" required>
-
+            {{ form.password(class="form-control", required=True) }}
+    
             <button type="submit">Iniciar Sesión</button>
         </form>
     </div>

@@ -1,8 +1,11 @@
 import os,re,secrets
 from dotenv import load_dotenv
 from flask_bcrypt import Bcrypt
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, Length
 from utils import password_check
 from markupsafe import escape
 from flask.sessions import SecureCookieSessionInterface
@@ -14,6 +17,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.config['WTF_CSRF_ENABLED'] = True
 app.session_interface = SecureCookieSessionInterface()
 
 db = SQLAlchemy(app)
@@ -24,54 +28,50 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     Username = db.Column(db.String(30), unique=True, nullable=False, index=True)
     Password = db.Column(db.String(128), nullable=False)
+
+class LoginForm(FlaskForm):
+    username = StringField('Nombre de usuario', validators=[DataRequired(), Length(max=30)])
+    password = PasswordField('Contraseña', validators=[DataRequired()])
+    submit = SubmitField('Iniciar sesión')
     
     
 @app.route('/', methods=['GET', 'POST'])
 def login():
-    message = ''
-    escaped_message= ''
+    form = LoginForm()
     if request.method == 'POST':
         
-        if 'username' in request.form and 'password' in request.form:
-            # Solicitud de inicio de sesión
-            username = request.form.get('username')[:30]
-            password = request.form.get('password')
-
+        if form.validate_on_submit():
+            username = form.username.data
+            password = form.password.data
 
             user = User.query.filter_by(Username=username).first()
 
             if user and bcrypt.check_password_hash(user.Password, password):
                 # Contraseña válida
                 session['user_id'] = user.id
-                message = 'Inicio de sesión exitoso'
-                escaped_message = escape(message)
+                flash('Inicio de sesión exitoso', 'success')
 
             else:
                 # Contraseña inválida
-                message = 'Inicio de sesión fallido. Verifica tus credenciales'
-                escaped_message = escape(message)
+                flash('Inicio de sesión fallido. Verifica tus credenciales', 'error')
 
         else:
-            message = 'Mala conexion'
-            escaped_message = escape(message)
+            flash('Mala conexión', 'error')
 
-    return render_template('index.html', message=escaped_message)
+    return render_template('login.html', form=form)
 
 # Ruta para agregar un nuevo usuario con contraseña segura
 @app.route('/nuevo_usuario', methods=['GET', 'POST'])
 def nuevo_usuario():
-    message = ''
-    escaped_message= ''
+    form = LoginForm()
     if request.method == 'POST':
         # Obtener datos del formulario
-        username = request.form.get('username')[:30]
-        password = request.form.get('password')
-
+        username = form.username.data
+        password = form.password.data
 
         # Verificar la fortaleza de la contraseña
         if not password_check(password):
-            message = 'La contraseña no cumple con los requisitos de seguridad'
-            escaped_message = escape(message)
+            flash('La contraseña no cumple con los requisitos de seguridad', 'error')
 
         else:
             # Generar el hash de la contraseña
@@ -84,11 +84,10 @@ def nuevo_usuario():
             db.session.add(nuevo_usuario)
             db.session.commit()
             
-            message = 'Nuevo usuario añadido con éxito'
-            escaped_message = escape(message)
+            flash('Nuevo usuario añadido con éxito', 'success')
 
 
-    return render_template('index.html', message=escaped_message)
+    return render_template('register.html', form=form)
 
 
 @app.teardown_appcontext
