@@ -8,6 +8,7 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length
 from utils import password_check
 from markupsafe import escape
+from flask_wtf.csrf import CSRFProtect
 from flask.sessions import SecureCookieSessionInterface
 
 # Cargando las variables de entorno desde .env
@@ -22,6 +23,8 @@ app.session_interface = SecureCookieSessionInterface()
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+csrf = CSRFProtect(app)
+csrf.init_app(app)
 
 class User(db.Model):
     __tablename__ = 'user'
